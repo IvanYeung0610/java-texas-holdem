@@ -1,5 +1,5 @@
 package shared;
 
-public class Action {
+public class Action{
 
 }
