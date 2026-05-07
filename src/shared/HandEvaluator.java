@@ -29,7 +29,7 @@ public class HandEvaluator {
     	int[] kickers = new int[5];
     }
 
-	public int evaluate(ArrayList<Card> cards) {
+	public static int evaluate(ArrayList<Card> cards) {
 		int maxScore = 0;
 		
 		Card[] hand = new Card[5];
