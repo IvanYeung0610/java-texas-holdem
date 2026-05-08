@@ -13,7 +13,7 @@ public class Pot {
 		total += amount;
 	}
 	
-	// transfers money in pot to player
+	// transfers money in pot to winning player(s)
 	public void award(ArrayList<Player> winners) {
 		int awardAmount = total / winners.size();
 		for (Player winner : winners) {

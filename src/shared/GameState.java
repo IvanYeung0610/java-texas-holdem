@@ -9,15 +9,17 @@ public class GameState implements Serializable {
 	private ArrayList<Player> players;
 	private int potTotal;
 	private int currentPlayer; // the player that is going
-	private String winner;
+	private ArrayList<String> winners;
+	private GamePhase phase;
 	
 	public GameState(ArrayList<Card> communityCards, ArrayList<Player> players, int potTotal,
-			int currentPlayer, String winner) {
+			int currentPlayer, ArrayList<String> winners, GamePhase phase) {
 		this.communityCards = communityCards;
 		this.players = players;
 		this.potTotal = potTotal;
 		this.currentPlayer = currentPlayer;
-		this.winner = winner;
+		this.winners = winners;
+		this.phase = phase;
 	}
 
 	public static long getSerialversionuid() {
@@ -40,7 +42,11 @@ public class GameState implements Serializable {
 		return currentPlayer;
 	}
 
-	public String getWinner() {
-		return winner;
+	public ArrayList<String> getWinner() {
+		return winners;
+	}
+	
+	public GamePhase getPhase() {
+		return phase;
 	}
 }

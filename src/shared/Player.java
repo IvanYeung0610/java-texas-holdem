@@ -12,7 +12,7 @@ public class Player implements Serializable {
 	private boolean allIn;
 	private ArrayList<Card> hand;
 	
-	Player(String name, int balance) {
+	public Player(String name, int balance) {
 		this.name = name;
 		this.balance = balance;
 		this.currentBet = 0;
@@ -21,10 +21,28 @@ public class Player implements Serializable {
 		this.hand = new ArrayList<>();
 	}
 	
-	public void receiveCard(Card card) {
-		hand.add(card);
+	public Player(Player other) {
+		this(other, false);
+	}
+
+	// boolean determines whether to copy the hand
+	public Player(Player other, boolean self) {
+		this.name = other.name;
+		this.balance = other.balance;
+		this.currentBet = other.currentBet;
+		this.folded = other.folded;
+		this.allIn = other.allIn;
+		// only copies over the hand if self is true
+		if (self) {
+			this.hand = new ArrayList<>(other.hand);
+		} else {
+			this.hand = new ArrayList<>();
+		}
 	}
 	
+	public void receiveCard(Card card) {
+		hand.add(card);
+	} 
 	public void placeBet(int amount) {
 		if (amount > balance) {
 			System.err.println("Not enough balance to place bet");
@@ -46,6 +64,10 @@ public class Player implements Serializable {
 		folded = false;
 		allIn = false;
 		hand.clear();
+	}
+
+	public void resetCurrentBet() {
+		currentBet = 0;
 	}
 	
 	public void addBalance(int amount) {
