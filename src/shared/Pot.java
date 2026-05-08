@@ -1,5 +1,7 @@
 package shared;
 
+import java.util.ArrayList;
+
 public class Pot {
 	private int total;
 	
@@ -12,8 +14,11 @@ public class Pot {
 	}
 	
 	// transfers money in pot to player
-	public void award(Player winner) {
-		winner.addBalance(total);
+	public void award(ArrayList<Player> winners) {
+		int awardAmount = total / winners.size();
+		for (Player winner : winners) {
+			winner.addBalance(awardAmount);
+		}
 		total = 0;
 	}
 	

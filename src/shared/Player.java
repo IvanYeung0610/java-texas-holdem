@@ -21,7 +21,7 @@ public class Player implements Serializable {
 		this.hand = new ArrayList<>();
 	}
 	
-	public void recieveCard(Card card) {
+	public void receiveCard(Card card) {
 		hand.add(card);
 	}
 	
