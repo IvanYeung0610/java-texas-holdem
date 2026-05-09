@@ -43,6 +43,7 @@ public class Server {
 
 		game.handleAction(p, action);
 		broadcastGameState();
+		advanceGame();
 	}
 	
 	public synchronized void removeClient(HandleClient client) {
@@ -70,6 +71,7 @@ public class Server {
 			if (disconnectedPlayer != null) {
 				game.forceFold(disconnectedPlayer);
 				broadcastGameState();
+				advanceGame();
 			}
 		}
 	}
@@ -92,6 +94,10 @@ public class Server {
 	}
 	
 	private void startGame() {
+		if (clients.size() < 2) {
+			return;
+		}
+
 		ArrayList<Player> players = new ArrayList<>();
 		for (HandleClient client : clients) {
 			players.add(client.getPlayer());
@@ -110,6 +116,36 @@ public class Server {
 		for (HandleClient client : clients) {
 			GameState state = game.buildGameState(client.getPlayer());
 			client.sendGameState(state);
+		}
+	}
+
+	private void advanceGame() {
+		if (game == null || game.getPhase() != GamePhase.SHOWDOWN) {
+			return;
+		}
+
+		if (clients.size() < 2 || game.isGameOver()) {
+			shutdown();
+			return;
+		}
+
+		startGame();
+	}
+
+	private void shutdown() {
+		ArrayList<HandleClient> clientsToClose = new ArrayList<>(clients);
+		clients.clear();
+
+		for (HandleClient client : clientsToClose) {
+			client.disconnect();
+		}
+
+		try {
+			if (serverSocket != null && !serverSocket.isClosed()) {
+				serverSocket.close();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	

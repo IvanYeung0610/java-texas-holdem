@@ -17,7 +17,7 @@ public class HandleClient implements Runnable{
 	private boolean running;
 	private int startingBalance;
 	
-	public HandleClient(Socket socket, Server server, int startingBalance) {
+	public HandleClient(Socket socket, Server server, int startingBalance) throws IOException {
 		this.socket = socket;
 		this.server = server;
 		this.startingBalance = startingBalance;
@@ -35,7 +35,7 @@ public class HandleClient implements Runnable{
 			this.player = new Player(name.trim(), startingBalance);
 		} catch (IOException e) {
 			disconnect();
-			throw new RuntimeException("Failed to initialize client connection", e);
+			throw e;
 		}
 	}
 	
