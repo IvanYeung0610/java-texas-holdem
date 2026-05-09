@@ -100,6 +100,36 @@ public class Game {
 		checkRoundState();
 	}
 
+	public void forceFold(Player p) {
+		if (p == null || phase == GamePhase.WAITING || phase == GamePhase.SHOWDOWN) {
+			return;
+		}
+
+		int playerIndex = players.indexOf(p);
+		if (playerIndex == -1 || p.isFolded()) {
+			return;
+		}
+
+		p.fold();
+		lastActorIndex = playerIndex;
+		if (playerIndex == lastAggressorIndex) {
+			lastAggressorHasActed = true;
+		}
+
+		ArrayList<Player> activePlayers = getActivePlayers();
+		if (activePlayers.size() == 1) {
+			awardPot(activePlayers);
+			phase = GamePhase.SHOWDOWN;
+			return;
+		}
+
+		if (playerIndex == currentPlayerIndex) {
+			advanceTurn();
+		}
+
+		checkRoundState();
+	}
+
 	public GameState buildGameState(Player recipient) {
 		ArrayList<Card> communityCopy = new ArrayList<>(communityCards);
 		ArrayList<Player> playersCopy = new ArrayList<>();

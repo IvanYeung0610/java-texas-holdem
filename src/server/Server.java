@@ -29,6 +29,7 @@ public class Server {
 			serverSocket = new ServerSocket(port);
 		} catch (IOException e) {
 			e.printStackTrace();
+			return;
 		}
 		
 		waitForPlayers();
@@ -36,6 +37,10 @@ public class Server {
 	}
 	
 	public synchronized void handleAction(Player p, String[] action) {
+		if (game == null) {
+			return;
+		}
+
 		game.handleAction(p, action);
 		broadcastGameState();
 	}
@@ -48,18 +53,22 @@ public class Server {
 		clients.remove(client);
 		client.disconnect();
 
-		// if the game has started, fold the disconnected player out
-		if (game != null) {
-			Player disconnectedPlayer = client.getPlayer();
-			ArrayList<Player> activePlayers = new ArrayList<>();
-
-			for (HandleClient cli : clients) {
-				activePlayers.add(cli.getPlayer());
+		if (clients.isEmpty()) {
+			try {
+				if (serverSocket != null && !serverSocket.isClosed()) {
+					serverSocket.close();
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
+			return;
+		}
 
-			// only fold if game is still going
-			if (!game.isGameOver() && game.getPhase() != GamePhase.SHOWDOWN) {
-				game.handleAction(disconnectedPlayer, new String[]{"FOLD"});
+		// if the game has started, fold the disconnected player out
+		if (game != null && game.getPhase() != GamePhase.SHOWDOWN && !game.isGameOver()) {
+			Player disconnectedPlayer = client.getPlayer();
+			if (disconnectedPlayer != null) {
+				game.forceFold(disconnectedPlayer);
 				broadcastGameState();
 			}
 		}
@@ -72,6 +81,7 @@ public class Server {
 				HandleClient clientHandler = 
 						new HandleClient(clientSocket, this, startingBalance);
 				clients.add(clientHandler);
+				clientHandler.sendWaitingState();
 				
 				Thread thread = new Thread(clientHandler);
 				thread.start();
@@ -93,6 +103,10 @@ public class Server {
 	}
 	
 	public void broadcastGameState() {
+		if (game == null) {
+			return;
+		}
+
 		for (HandleClient client : clients) {
 			GameState state = game.buildGameState(client.getPlayer());
 			client.sendGameState(state);

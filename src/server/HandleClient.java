@@ -2,6 +2,7 @@ package server;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
 
 import shared.Player;
 import shared.GamePhase;
@@ -20,6 +21,22 @@ public class HandleClient implements Runnable{
 		this.socket = socket;
 		this.server = server;
 		this.startingBalance = startingBalance;
+		this.running = true;
+
+		try {
+			out = new ObjectOutputStream(socket.getOutputStream());
+			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+			String name = in.readLine();
+			if (name == null) {
+				throw new IOException("Client disconnected before sending a name");
+			}
+
+			this.player = new Player(name.trim(), startingBalance);
+		} catch (IOException e) {
+			disconnect();
+			throw new RuntimeException("Failed to initialize client connection", e);
+		}
 	}
 	
 	public void sendGameState(GameState state) {
@@ -28,33 +45,33 @@ public class HandleClient implements Runnable{
 			out.flush();
 			out.reset();
 		} catch (IOException e) {
-			// TODO: call server's removeClient
+			server.removeClient(this);
 		}
+	}
+
+	public void sendWaitingState() {
+		sendGameState(new GameState(new ArrayList<>(), new ArrayList<>(), 0, 0, new ArrayList<>(),
+				GamePhase.WAITING));
 	}
 
 	@Override
 	public void run() {
-		running = true;
 		try {
-			out = new ObjectOutputStream(socket.getOutputStream());
-			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			
-			// immediately read name to initialize the player
-			String name = in.readLine().trim();
-			this.player = new Player(name, startingBalance);
-			
-			// sends WAITING GameState to notify client that they are connected
-			sendGameState(new GameState(null, null, 0, 0, null, GamePhase.WAITING));
-			
 			while (running) {
 				String line = in.readLine();
-				String[] action = line.trim().split(" ");
+				if (line == null) {
+					server.removeClient(this);
+					return;
+				}
+
+				String[] action = parseAction(line);
+				if (action.length == 0) {
+					continue;
+				}
 				server.handleAction(player, action);
 			}
-
-		} catch(IOException e) {
-			// TODO: calls server's removeClient
-			running = false;
+		} catch (IOException e) {
+			server.removeClient(this);
 		}
 	}
 	
@@ -66,11 +83,25 @@ public class HandleClient implements Runnable{
 		running = false;
 		
 		try {
-			in.close();
-			out.close();
-			socket.close();
+			if (in != null) {
+				in.close();
+			}
+			if (out != null) {
+				out.close();
+			}
+			if (socket != null && !socket.isClosed()) {
+				socket.close();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	private String[] parseAction(String line) {
+		String trimmedLine = line.trim();
+		if (trimmedLine.isEmpty()) {
+			return new String[0];
+		}
+		return trimmedLine.split("\\s+");
 	}
 }
