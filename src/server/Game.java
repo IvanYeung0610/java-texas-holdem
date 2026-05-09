@@ -462,5 +462,9 @@ public class Game {
 			smallBlindIndex %= players.size();
 		}
 	}
+	
+	public GamePhase getPhase() {
+		return phase;
+	}
 
 }
