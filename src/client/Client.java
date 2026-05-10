@@ -14,6 +14,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -33,18 +34,23 @@ import java.io.ObjectInputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Client {
 	private Socket socket;
 	private ObjectInputStream in;
 	private PrintWriter out;
 	private String playerName;
-	private GameState lastGameState;
+	private GameState previousGameState;
+	private Map<String, Integer> handStartBalances;
 
 	private JFrame frame;
 	private JLabel statusLabel;
 	private JLabel potLabel;
 	private JPanel playersPanel;
+	private JTextArea turnInfoArea;
+	private JTextArea actionLogArea;
 	private JPanel communityPanel;
 	private JPanel handPanel;
 	private JPanel actionPanel;
@@ -59,6 +65,7 @@ public class Client {
 		this.socket = new Socket(host, port);
 		this.in = new ObjectInputStream(socket.getInputStream());
 		this.out = new PrintWriter(socket.getOutputStream(), true);
+		this.handStartBalances = new HashMap<>();
 		this.out.println(playerName);
 		this.out.flush();
 
@@ -69,7 +76,7 @@ public class Client {
 	private void buildUI() {
 		frame = new JFrame("Texas Hold'em - " + playerName);
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		frame.setSize(900, 600);
+		frame.setSize(1200, 720);
 		frame.setLocationRelativeTo(null);
 		frame.setLayout(new BorderLayout(10, 10));
 
@@ -82,6 +89,20 @@ public class Client {
 		playersPanel = new JPanel();
 		playersPanel.setLayout(new BoxLayout(playersPanel, BoxLayout.Y_AXIS));
 		playersPanel.setBorder(BorderFactory.createTitledBorder("Players"));
+
+		turnInfoArea = new JTextArea(8, 18);
+		turnInfoArea.setEditable(false);
+		turnInfoArea.setLineWrap(true);
+		turnInfoArea.setWrapStyleWord(true);
+		turnInfoArea.setFont(new Font("SansSerif", Font.BOLD, 15));
+		turnInfoArea.setText("Waiting for game to start...");
+
+		actionLogArea = new JTextArea();
+		actionLogArea.setEditable(false);
+		actionLogArea.setLineWrap(true);
+		actionLogArea.setWrapStyleWord(true);
+		actionLogArea.setFont(new Font("Monospaced", Font.PLAIN, 13));
+		actionLogArea.setText("Game log will appear here.\n");
 
 		communityPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 16));
 		communityPanel.setBorder(BorderFactory.createTitledBorder("Community Cards"));
@@ -127,8 +148,27 @@ public class Client {
 		centerPanel.add(communityPanel);
 		centerPanel.add(handPanel);
 
+		JPanel leftPanel = new JPanel(new BorderLayout(10, 10));
+		JScrollPane playersScrollPane = new JScrollPane(playersPanel);
+		playersScrollPane.setBorder(BorderFactory.createTitledBorder("Players"));
+
+		JScrollPane turnScrollPane = new JScrollPane(turnInfoArea);
+		turnScrollPane.setBorder(BorderFactory.createTitledBorder("Turn Tracker"));
+		turnScrollPane.setPreferredSize(new Dimension(300, 180));
+		turnScrollPane.setMinimumSize(new Dimension(300, 180));
+
+		leftPanel.add(playersScrollPane, BorderLayout.CENTER);
+		JPanel lowerLeftPanel = new JPanel(new GridLayout(2, 1, 10, 10));
+		JScrollPane actionLogScrollPane = new JScrollPane(actionLogArea);
+		actionLogScrollPane.setBorder(BorderFactory.createTitledBorder("Hand History"));
+		actionLogScrollPane.setPreferredSize(new Dimension(300, 240));
+		lowerLeftPanel.add(actionLogScrollPane);
+		lowerLeftPanel.add(turnScrollPane);
+		leftPanel.add(lowerLeftPanel, BorderLayout.SOUTH);
+		leftPanel.setPreferredSize(new Dimension(320, 0));
+
 		frame.add(headerPanel, BorderLayout.NORTH);
-		frame.add(new JScrollPane(playersPanel), BorderLayout.WEST);
+		frame.add(leftPanel, BorderLayout.WEST);
 		frame.add(centerPanel, BorderLayout.CENTER);
 		frame.add(actionPanel, BorderLayout.SOUTH);
 		frame.setVisible(true);
@@ -139,7 +179,6 @@ public class Client {
 			try {
 				while (true) {
 					GameState state = (GameState) in.readObject();
-					lastGameState = state;
 					SwingUtilities.invokeLater(() -> updateUI(state));
 				}
 			} catch (IOException | ClassNotFoundException e) {
@@ -159,6 +198,8 @@ public class Client {
 		ArrayList<Card> communityCards = state.getCommunityCards() == null
 				? new ArrayList<>() : state.getCommunityCards();
 
+		logStateChanges(previousGameState, state);
+
 		String currentPlayerName = "N/A";
 		if (!players.isEmpty() && state.getCurrentPlayer() >= 0 && state.getCurrentPlayer() < players.size()) {
 			currentPlayerName = players.get(state.getCurrentPlayer()).getName();
@@ -166,6 +207,7 @@ public class Client {
 
 		statusLabel.setText("Phase: " + state.getPhase() + " | Current Player: " + currentPlayerName);
 		potLabel.setText("Pot: " + state.getPotTotal());
+		updateTurnInfo(state, currentPlayerName);
 
 		playersPanel.removeAll();
 		for (int i = 0; i < players.size(); i++) {
@@ -202,6 +244,14 @@ public class Client {
 				&& players.get(state.getCurrentPlayer()).getName().equals(playerName);
 
 		setActionButtonsEnabled(isMyTurn);
+		if (isMyTurn && self != null) {
+			int tableBet = getHighestCurrentBet(players);
+			boolean canCheck = self.getCurrentBet() == tableBet;
+			boolean canCall = self.getCurrentBet() < tableBet && self.getBalance() > 0;
+
+			checkButton.setEnabled(canCheck);
+			callButton.setEnabled(canCall);
+		}
 
 		if (state.getPhase() == GamePhase.SHOWDOWN) {
 			ArrayList<String> winners = state.getWinner();
@@ -214,6 +264,7 @@ public class Client {
 
 		frame.revalidate();
 		frame.repaint();
+		previousGameState = state;
 	}
 
 	private void sendAction(String action) {
@@ -229,6 +280,202 @@ public class Client {
 			}
 		}
 		return null;
+	}
+
+	private int getHighestCurrentBet(ArrayList<Player> players) {
+		int highestBet = 0;
+		for (Player player : players) {
+			if (player.getCurrentBet() > highestBet) {
+				highestBet = player.getCurrentBet();
+			}
+		}
+		return highestBet;
+	}
+
+	private void updateTurnInfo(GameState state, String currentPlayerName) {
+		StringBuilder info = new StringBuilder();
+		info.append("Phase: ").append(state.getPhase()).append('\n');
+		info.append("Current turn: ").append(currentPlayerName).append('\n');
+		info.append("Pot: ").append(state.getPotTotal()).append('\n');
+
+		if (currentPlayerName.equals(playerName) && state.getPhase() != GamePhase.WAITING
+				&& state.getPhase() != GamePhase.SHOWDOWN) {
+			info.append('\n').append("It is your turn.");
+		} else if (state.getPhase() == GamePhase.SHOWDOWN) {
+			info.append('\n').append("Hand complete.");
+		} else if (state.getPhase() == GamePhase.WAITING) {
+			info.append('\n').append("Waiting for enough players.");
+		} else {
+			info.append('\n').append("Waiting for ").append(currentPlayerName).append(" to act.");
+		}
+
+		turnInfoArea.setText(info.toString());
+		turnInfoArea.setCaretPosition(0);
+	}
+
+	private void logStateChanges(GameState previousState, GameState currentState) {
+		if (isStartOfNewHand(previousState, currentState)) {
+			recordHandStartBalances(currentState.getPlayers());
+			appendLog("");
+			appendLog("New hand started.");
+		}
+
+		logPhaseTransition(previousState, currentState);
+		logPlayerAction(previousState, currentState);
+		logShowdownResults(previousState, currentState);
+	}
+
+	private boolean isStartOfNewHand(GameState previousState, GameState currentState) {
+		if (currentState.getPhase() != GamePhase.PRE_FLOP || !currentState.getCommunityCards().isEmpty()) {
+			return false;
+		}
+
+		if (previousState == null) {
+			return true;
+		}
+
+		return previousState.getPhase() == GamePhase.WAITING
+				|| previousState.getPhase() == GamePhase.SHOWDOWN
+				|| !previousState.getCommunityCards().isEmpty();
+	}
+
+	private void recordHandStartBalances(ArrayList<Player> players) {
+		handStartBalances.clear();
+		for (Player player : players) {
+			handStartBalances.put(player.getName(), player.getBalance());
+		}
+	}
+
+	private void logPhaseTransition(GameState previousState, GameState currentState) {
+		if (previousState == null || previousState.getPhase() == currentState.getPhase()) {
+			return;
+		}
+
+		switch (currentState.getPhase()) {
+		case FLOP:
+			appendLog("Flop: " + formatCards(currentState.getCommunityCards()));
+			break;
+		case TURN:
+			if (!currentState.getCommunityCards().isEmpty()) {
+				Card turnCard = currentState.getCommunityCards()
+						.get(currentState.getCommunityCards().size() - 1);
+				appendLog("Turn: " + formatCard(turnCard));
+			}
+			break;
+		case RIVER:
+			if (!currentState.getCommunityCards().isEmpty()) {
+				Card riverCard = currentState.getCommunityCards()
+						.get(currentState.getCommunityCards().size() - 1);
+				appendLog("River: " + formatCard(riverCard));
+			}
+			break;
+		default:
+			break;
+		}
+	}
+
+	private void logPlayerAction(GameState previousState, GameState currentState) {
+		if (previousState == null) {
+			return;
+		}
+
+		ArrayList<Player> previousPlayers = previousState.getPlayers();
+		ArrayList<Player> currentPlayers = currentState.getPlayers();
+		if (previousPlayers.size() != currentPlayers.size()) {
+			return;
+		}
+
+		int previousTableBet = getHighestCurrentBet(previousPlayers);
+		for (int i = 0; i < currentPlayers.size(); i++) {
+			Player previousPlayer = previousPlayers.get(i);
+			Player currentPlayer = currentPlayers.get(i);
+			String playerAction = inferPlayerAction(previousPlayer, currentPlayer, previousTableBet, previousState, currentState, i);
+			if (playerAction != null) {
+				appendLog(playerAction);
+				return;
+			}
+		}
+	}
+
+	private String inferPlayerAction(Player previousPlayer, Player currentPlayer, int previousTableBet,
+			GameState previousState, GameState currentState, int playerIndex) {
+		String playerName = currentPlayer.getName();
+
+		if (!previousPlayer.isFolded() && currentPlayer.isFolded()) {
+			return playerName + " folded.";
+		}
+
+		int betIncrease = currentPlayer.getCurrentBet() - previousPlayer.getCurrentBet();
+		if (betIncrease > 0) {
+			if (previousTableBet == 0 && currentPlayer.getCurrentBet() > 0) {
+				return playerName + " bet " + betIncrease + ".";
+			}
+
+			if (previousPlayer.getCurrentBet() < previousTableBet
+					&& currentPlayer.getCurrentBet() == previousTableBet) {
+				return playerName + " called " + betIncrease + ".";
+			}
+
+			if (currentPlayer.getCurrentBet() > previousTableBet) {
+				return playerName + " raised to " + currentPlayer.getCurrentBet() + ".";
+			}
+
+			return playerName + " added " + betIncrease + " to the pot.";
+		}
+
+		boolean wasCurrentPlayer = previousState.getCurrentPlayer() == playerIndex;
+		boolean turnAdvanced = currentState.getCurrentPlayer() != previousState.getCurrentPlayer();
+		if (wasCurrentPlayer && turnAdvanced && !currentPlayer.isFolded()
+				&& currentPlayer.getCurrentBet() == previousPlayer.getCurrentBet()) {
+			return playerName + " checked.";
+		}
+
+		return null;
+	}
+
+	private void logShowdownResults(GameState previousState, GameState currentState) {
+		if (currentState.getPhase() != GamePhase.SHOWDOWN) {
+			return;
+		}
+
+		if (previousState != null && previousState.getPhase() == GamePhase.SHOWDOWN) {
+			return;
+		}
+
+		ArrayList<String> winners = currentState.getWinner();
+		if (winners != null && !winners.isEmpty()) {
+			appendLog("Winner: " + String.join(", ", winners));
+		}
+
+		for (Player player : currentState.getPlayers()) {
+			int startingBalance = handStartBalances.getOrDefault(player.getName(), player.getBalance());
+			int balanceChange = player.getBalance() - startingBalance;
+
+			if (balanceChange > 0) {
+				appendLog(player.getName() + " won " + balanceChange + ".");
+			} else if (balanceChange < 0) {
+				appendLog(player.getName() + " lost " + Math.abs(balanceChange) + ".");
+			} else {
+				appendLog(player.getName() + " broke even.");
+			}
+		}
+	}
+
+	private String formatCards(ArrayList<Card> cards) {
+		ArrayList<String> formattedCards = new ArrayList<>();
+		for (Card card : cards) {
+			formattedCards.add(formatCard(card));
+		}
+		return String.join(" ", formattedCards);
+	}
+
+	private String formatCard(Card card) {
+		return getRankText(card) + getSuitSymbol(card);
+	}
+
+	private void appendLog(String message) {
+		actionLogArea.append(message + "\n");
+		actionLogArea.setCaretPosition(actionLogArea.getDocument().getLength());
 	}
 
 	private JComponent createCardComponent(Card card) {

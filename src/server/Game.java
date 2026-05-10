@@ -25,8 +25,7 @@ public class Game {
 	private int smallBlindIndex;
 	private int potTotal;
 	private ArrayList<String> winnerNames;
-	private int lastActorIndex;
-	private boolean lastAggressorHasActed;
+	private ArrayList<Boolean> playersActedThisRound;
 
 	public Game(ArrayList<Player> players) {
 		this.players = players;
@@ -40,8 +39,7 @@ public class Game {
 		this.smallBlindIndex = 0;
 		this.potTotal = 0;
 		this.winnerNames = new ArrayList<>();
-		this.lastActorIndex = -1;
-		this.lastAggressorHasActed = false;
+		this.playersActedThisRound = new ArrayList<>();
 	}
 
 	public void startGame() {
@@ -62,8 +60,7 @@ public class Game {
 		currentPlayerIndex = (smallBlindIndex + 2) % players.size();
 		currentPlayerIndex = findNextIndex(currentPlayerIndex, false);
 		lastAggressorIndex = (smallBlindIndex + 1) % players.size();
-		lastAggressorHasActed = false;
-		lastActorIndex = -1;
+		resetPlayersActedThisRound();
 
 		if (!hasPlayersWhoCanAct()) {
 			advancePhase();
@@ -111,10 +108,7 @@ public class Game {
 		}
 
 		p.fold();
-		lastActorIndex = playerIndex;
-		if (playerIndex == lastAggressorIndex) {
-			lastAggressorHasActed = true;
-		}
+		markPlayerActed(playerIndex);
 
 		ArrayList<Player> activePlayers = getActivePlayers();
 		if (activePlayers.size() == 1) {
@@ -182,10 +176,7 @@ public class Game {
 
 	private void handleFold(Player p) {
 		p.fold();
-		lastActorIndex = players.indexOf(p);
-		if (lastActorIndex == lastAggressorIndex) {
-			lastAggressorHasActed = true;
-		}
+		markPlayerActed(players.indexOf(p));
 
 		ArrayList<Player> activePlayers = getActivePlayers();
 		if (activePlayers.size() == 1) {
@@ -207,10 +198,7 @@ public class Game {
 			potTotal += amountToPlace;
 		}
 
-		lastActorIndex = players.indexOf(p);
-		if (lastActorIndex == lastAggressorIndex) {
-			lastAggressorHasActed = true;
-		}
+		markPlayerActed(players.indexOf(p));
 
 		advanceTurn();
 	}
@@ -220,10 +208,7 @@ public class Game {
 			return;
 		}
 
-		lastActorIndex = players.indexOf(p);
-		if (lastActorIndex == lastAggressorIndex) {
-			lastAggressorHasActed = true;
-		}
+		markPlayerActed(players.indexOf(p));
 
 		advanceTurn();
 	}
@@ -249,8 +234,8 @@ public class Game {
 
 		currentBet = p.getCurrentBet();
 		lastAggressorIndex = players.indexOf(p);
-		lastActorIndex = lastAggressorIndex;
-		lastAggressorHasActed = true;
+		resetPlayersActedThisRound();
+		markPlayerActed(lastAggressorIndex);
 
 		advanceTurn();
 	}
@@ -293,22 +278,24 @@ public class Game {
 			}
 		}
 
-		if (!lastAggressorHasActed) {
-			return false;
+		for (int i = 0; i < players.size(); i++) {
+			Player player = players.get(i);
+			if (!player.isFolded() && !player.isAllIn() && !playersActedThisRound.get(i)) {
+				return false;
+			}
 		}
 
-		return currentPlayerIndex == lastAggressorIndex || lastActorIndex == lastAggressorIndex;
+		return true;
 	}
 
 	private void advancePhase() {
 		resetCurrentBets();
 		currentBet = 0;
-		lastActorIndex = -1;
 
 		int startingIndex = findPhaseStartIndex();
 		currentPlayerIndex = startingIndex;
 		lastAggressorIndex = startingIndex;
-		lastAggressorHasActed = false;
+		resetPlayersActedThisRound();
 
 		switch (phase) {
 		case PRE_FLOP:
@@ -415,8 +402,7 @@ public class Game {
 		potTotal = 0;
 		currentBet = 0;
 		winnerNames.clear();
-		lastActorIndex = -1;
-		lastAggressorHasActed = false;
+		resetPlayersActedThisRound();
 
 		for (Player player : players) {
 			player.reset();
@@ -490,6 +476,19 @@ public class Game {
 			smallBlindIndex = 0;
 		} else {
 			smallBlindIndex %= players.size();
+		}
+	}
+
+	private void resetPlayersActedThisRound() {
+		playersActedThisRound.clear();
+		for (int i = 0; i < players.size(); i++) {
+			playersActedThisRound.add(false);
+		}
+	}
+
+	private void markPlayerActed(int playerIndex) {
+		if (playerIndex >= 0 && playerIndex < playersActedThisRound.size()) {
+			playersActedThisRound.set(playerIndex, true);
 		}
 	}
 	
