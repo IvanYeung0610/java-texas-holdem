@@ -248,9 +248,12 @@ public class Client {
 			int tableBet = getHighestCurrentBet(players);
 			boolean canCheck = self.getCurrentBet() == tableBet;
 			boolean canCall = self.getCurrentBet() < tableBet && self.getBalance() > 0;
+			boolean canRaise = self.getCurrentBet() == tableBet && self.getBalance() > 0;
 
 			checkButton.setEnabled(canCheck);
 			callButton.setEnabled(canCall);
+			raiseButton.setEnabled(canRaise);
+			raiseField.setEnabled(canRaise);
 		}
 
 		if (state.getPhase() == GamePhase.SHOWDOWN) {
