@@ -44,6 +44,7 @@ public class Client {
 	private String playerName;
 	private GameState previousGameState;
 	private Map<String, Integer> handStartBalances;
+	private boolean gameOverScreenShown;
 
 	private JFrame frame;
 	private JLabel statusLabel;
@@ -66,6 +67,7 @@ public class Client {
 		this.in = new ObjectInputStream(socket.getInputStream());
 		this.out = new PrintWriter(socket.getOutputStream(), true);
 		this.handStartBalances = new HashMap<>();
+		this.gameOverScreenShown = false;
 		this.out.println(playerName);
 		this.out.flush();
 
@@ -183,6 +185,9 @@ public class Client {
 				}
 			} catch (IOException | ClassNotFoundException e) {
 				SwingUtilities.invokeLater(() -> {
+					if (gameOverScreenShown) {
+						return;
+					}
 					setActionButtonsEnabled(false);
 					statusLabel.setText("Disconnected from server.");
 				});
@@ -263,6 +268,10 @@ public class Client {
 					: String.join(", ", winners);
 			statusLabel.setText("Showdown | Winner: " + winnerText);
 			setActionButtonsEnabled(false);
+
+			if (isGameOverState(state)) {
+				showGameOverScreen(state);
+			}
 		}
 
 		frame.revalidate();
@@ -293,6 +302,81 @@ public class Client {
 			}
 		}
 		return highestBet;
+	}
+
+	private boolean isGameOverState(GameState state) {
+		int playersWithChips = 0;
+		for (Player player : state.getPlayers()) {
+			if (player.getBalance() > 0) {
+				playersWithChips++;
+			}
+		}
+		return state.getPhase() == GamePhase.SHOWDOWN && playersWithChips <= 1;
+	}
+
+	private void showGameOverScreen(GameState state) {
+		if (gameOverScreenShown) {
+			return;
+		}
+
+		gameOverScreenShown = true;
+
+		Player self = findSelf(state.getPlayers());
+		int startingBalance = self == null
+				? 0
+				: handStartBalances.getOrDefault(self.getName(), self.getBalance());
+		int balanceChange = self == null ? 0 : self.getBalance() - startingBalance;
+		boolean wonGame = self != null && self.getBalance() > 0;
+
+		JPanel gameOverPanel = new JPanel(new BorderLayout(20, 20));
+		gameOverPanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
+
+		JLabel titleLabel = new JLabel(wonGame ? "You Won The Game" : "You Lost The Game", SwingConstants.CENTER);
+		titleLabel.setFont(new Font("SansSerif", Font.BOLD, 32));
+
+		StringBuilder summary = new StringBuilder();
+		if (self != null) {
+			summary.append("Player: ").append(self.getName()).append('\n');
+			summary.append("Final balance: ").append(self.getBalance()).append('\n');
+
+			if (balanceChange > 0) {
+				summary.append("This hand: won ").append(balanceChange).append('\n');
+			} else if (balanceChange < 0) {
+				summary.append("This hand: lost ").append(Math.abs(balanceChange)).append('\n');
+			} else {
+				summary.append("This hand: broke even").append('\n');
+			}
+		}
+
+		ArrayList<String> winners = state.getWinner();
+		if (winners != null && !winners.isEmpty()) {
+			summary.append("Final hand winner: ").append(String.join(", ", winners)).append('\n');
+		}
+
+		JTextArea summaryArea = new JTextArea(summary.toString().trim());
+		summaryArea.setEditable(false);
+		summaryArea.setOpaque(false);
+		summaryArea.setLineWrap(true);
+		summaryArea.setWrapStyleWord(true);
+		summaryArea.setFont(new Font("SansSerif", Font.PLAIN, 20));
+
+		JButton exitButton = new JButton("Exit");
+		exitButton.setFont(new Font("SansSerif", Font.BOLD, 18));
+		exitButton.addActionListener(e -> {
+			frame.dispose();
+			System.exit(0);
+		});
+
+		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+		buttonPanel.add(exitButton);
+
+		gameOverPanel.add(titleLabel, BorderLayout.NORTH);
+		gameOverPanel.add(summaryArea, BorderLayout.CENTER);
+		gameOverPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+		frame.setContentPane(gameOverPanel);
+		frame.revalidate();
+		frame.repaint();
 	}
 
 	private void updateTurnInfo(GameState state, String currentPlayerName) {
