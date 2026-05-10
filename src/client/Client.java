@@ -8,6 +8,7 @@ import shared.Player;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -18,8 +19,15 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.RenderingHints;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.PrintWriter;
@@ -75,10 +83,10 @@ public class Client {
 		playersPanel.setLayout(new BoxLayout(playersPanel, BoxLayout.Y_AXIS));
 		playersPanel.setBorder(BorderFactory.createTitledBorder("Players"));
 
-		communityPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+		communityPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 16));
 		communityPanel.setBorder(BorderFactory.createTitledBorder("Community Cards"));
 
-		handPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+		handPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 16));
 		handPanel.setBorder(BorderFactory.createTitledBorder("Your Hand"));
 
 		actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
@@ -115,9 +123,9 @@ public class Client {
 
 		setActionButtonsEnabled(false);
 
-		JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
-		centerPanel.add(communityPanel, BorderLayout.CENTER);
-		centerPanel.add(handPanel, BorderLayout.SOUTH);
+		JPanel centerPanel = new JPanel(new GridLayout(2, 1, 10, 10));
+		centerPanel.add(communityPanel);
+		centerPanel.add(handPanel);
 
 		frame.add(headerPanel, BorderLayout.NORTH);
 		frame.add(new JScrollPane(playersPanel), BorderLayout.WEST);
@@ -174,14 +182,14 @@ public class Client {
 
 		communityPanel.removeAll();
 		for (Card card : communityCards) {
-			communityPanel.add(createCardLabel(card));
+			communityPanel.add(createCardComponent(card));
 		}
 
 		handPanel.removeAll();
 		Player self = findSelf(players);
 		if (self != null) {
 			for (Card card : self.getHand()) {
-				handPanel.add(createCardLabel(card));
+				handPanel.add(createCardComponent(card));
 			}
 		}
 
@@ -223,34 +231,51 @@ public class Client {
 		return null;
 	}
 
-	private JLabel createCardLabel(Card card) {
-		JLabel label = new JLabel(formatCard(card), SwingConstants.CENTER);
-		label.setBorder(BorderFactory.createEtchedBorder());
-		return label;
+	private JComponent createCardComponent(Card card) {
+		return new CardView(card);
 	}
 
-	private String formatCard(Card card) {
+	private String getRankText(Card card) {
 		int rank = card.getRank();
-		String rankText;
 		switch (rank) {
 		case 11:
-			rankText = "J";
-			break;
+			return "J";
 		case 12:
-			rankText = "Q";
-			break;
+			return "Q";
 		case 13:
-			rankText = "K";
-			break;
+			return "K";
 		case 14:
-			rankText = "A";
-			break;
+			return "A";
 		default:
-			rankText = Integer.toString(rank);
-			break;
+			return Integer.toString(rank);
 		}
+	}
 
-		return rankText + " of " + card.getSuit();
+	private String getSuitSymbol(Card card) {
+		switch (card.getSuit()) {
+		case HEART:
+			return "\u2665";
+		case DIAMOND:
+			return "\u2666";
+		case CLUB:
+			return "\u2663";
+		case SPADE:
+			return "\u2660";
+		default:
+			return "?";
+		}
+	}
+
+	private Color getSuitColor(Card card) {
+		switch (card.getSuit()) {
+		case HEART:
+		case DIAMOND:
+			return new Color(184, 35, 35);
+		case CLUB:
+		case SPADE:
+		default:
+			return new Color(25, 25, 25);
+		}
 	}
 
 	private void setActionButtonsEnabled(boolean enabled) {
@@ -259,6 +284,59 @@ public class Client {
 		checkButton.setEnabled(enabled);
 		raiseButton.setEnabled(enabled);
 		raiseField.setEnabled(enabled);
+	}
+
+	private final class CardView extends JPanel {
+		private static final int CARD_WIDTH = 90;
+		private static final int CARD_HEIGHT = 130;
+		private final Card card;
+
+		private CardView(Card card) {
+			this.card = card;
+			setOpaque(false);
+			setPreferredSize(new Dimension(CARD_WIDTH, CARD_HEIGHT));
+			setMinimumSize(new Dimension(CARD_WIDTH, CARD_HEIGHT));
+			setMaximumSize(new Dimension(CARD_WIDTH, CARD_HEIGHT));
+			setAlignmentY(Component.CENTER_ALIGNMENT);
+		}
+
+		@Override
+		protected void paintComponent(Graphics g) {
+			super.paintComponent(g);
+
+			Graphics2D g2 = (Graphics2D) g.create();
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+			Color suitColor = getSuitColor(card);
+			String rankText = getRankText(card);
+			String suitText = getSuitSymbol(card);
+
+			g2.setColor(Color.WHITE);
+			g2.fillRoundRect(0, 0, CARD_WIDTH - 1, CARD_HEIGHT - 1, 18, 18);
+			g2.setColor(new Color(55, 55, 55));
+			g2.drawRoundRect(0, 0, CARD_WIDTH - 1, CARD_HEIGHT - 1, 18, 18);
+
+			g2.setColor(suitColor);
+			g2.setFont(new Font("SansSerif", Font.BOLD, 20));
+			g2.drawString(rankText, 10, 24);
+			g2.setFont(new Font("SansSerif", Font.PLAIN, 18));
+			g2.drawString(suitText, 12, 44);
+
+			g2.setFont(new Font("SansSerif", Font.PLAIN, 40));
+			Font centerFont = g2.getFont();
+			int centerSuitWidth = g2.getFontMetrics(centerFont).stringWidth(suitText);
+			g2.drawString(suitText, (CARD_WIDTH - centerSuitWidth) / 2, 78);
+
+			g2.setFont(new Font("SansSerif", Font.BOLD, 20));
+			int bottomRankWidth = g2.getFontMetrics().stringWidth(rankText);
+			g2.drawString(rankText, CARD_WIDTH - bottomRankWidth - 10, CARD_HEIGHT - 20);
+			g2.setFont(new Font("SansSerif", Font.PLAIN, 18));
+			int bottomSuitWidth = g2.getFontMetrics().stringWidth(suitText);
+			g2.drawString(suitText, CARD_WIDTH - bottomSuitWidth - 12, CARD_HEIGHT - 40);
+
+			g2.dispose();
+		}
 	}
 
 	public static void main(String[] args) {
