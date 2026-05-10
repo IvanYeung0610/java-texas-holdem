@@ -88,7 +88,6 @@ public class Client {
 
 		playersPanel = new JPanel();
 		playersPanel.setLayout(new BoxLayout(playersPanel, BoxLayout.Y_AXIS));
-		playersPanel.setBorder(BorderFactory.createTitledBorder("Players"));
 
 		turnInfoArea = new JTextArea(8, 18);
 		turnInfoArea.setEditable(false);
@@ -151,6 +150,7 @@ public class Client {
 		JPanel leftPanel = new JPanel(new BorderLayout(10, 10));
 		JScrollPane playersScrollPane = new JScrollPane(playersPanel);
 		playersScrollPane.setBorder(BorderFactory.createTitledBorder("Players"));
+		playersScrollPane.setViewportBorder(null);
 
 		JScrollPane turnScrollPane = new JScrollPane(turnInfoArea);
 		turnScrollPane.setBorder(BorderFactory.createTitledBorder("Turn Tracker"));
