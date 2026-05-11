@@ -150,9 +150,7 @@ public class Server {
 	}
 	
 	public static void main(String[] args) {
-		// Hardcoded values
-		// TODO: Change to take user input?
-		Server server = new Server(3000, 2, 1000);
+		Server server = new Server(3000, 3, 1000);
 		server.start();
 	}
 	
