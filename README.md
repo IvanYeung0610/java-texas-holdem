@@ -34,8 +34,9 @@ If running on terminal:
 
 1. Go into the project directory `cd java-texas-holdem`
 2. Compile the java files `javac src/*.java`
-3. Run the server `java src/server/Server`
-4. For each client open a terminal and run `java src/client/Client`
+3. Go into src folder `cd src/`
+3. Run the server `java server.Server`
+4. For each client open a terminal and run `java client.Client`
 5. In each client window, enter:
    - player name
    - server host
