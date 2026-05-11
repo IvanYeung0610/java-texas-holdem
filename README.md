@@ -1,5 +1,7 @@
 # Java Texas Hold'em
 
+![Game UI](GameUI.png)
+
 Texas hold’em is a popular variant of poker. The basic premise of the game consists of each player getting two cards at the beginning of a round and the dealer spreading out five cards that can be used by all players. The object of this game is to have the best possible combination of five cards using any combination of the seven cards available (the two cards received at the beginning along with the five cards spread by the dealer). The dealer will spread these five cards out over the course of three phases. Before and in between these phases each player will have a turn to perform an action (fold, call, check, or raise) to leave the game, stay in the game, or raise the amount being bet for that round. Once all five cards have been shown, the person with the best hand gets all the money that was bet. If everyone folded except a single person, that remaining person gets all the money.
 
 This project is a multiplayer Texas Hold'em game written in Java. It uses a client-server architecture where one machine runs the game server and multiple clients connect to play through a Swing-based graphical interface.
@@ -56,7 +58,6 @@ These can be changed in the `main` method of `server.Server`.
 **Gameplay Features**
 
 - Multiplayer Texas Hold'em
-- Dealer rotation with blinds
 - Pre-flop, flop, turn, river, and showdown phases
 - Folding, checking, calling, and raising
 - Pot tracking
@@ -103,7 +104,7 @@ The poker hand scoring logic is implemented in HandEvaluator.java. The evaluator
 This project uses the following three advanced course topics:
 
 1. **Networking with sockets**
-   The game uses Java sockets so players on different machines can connect to the same server. The server listens for incoming client connections. The sockets were used to send game information to the clients with the Serializable GameState class. The actions performed by the clients were communicated as text through the input and output streams of the socket to the server. Each action was tied to a specific string (FOLD, CALL, CHECK, RAISE) which were sent with PrintWriter and read with BufferedReader.
+   The game uses Java sockets so players on different machines can connect to the same server. The server listens for incoming client connections. The sockets were are used to send game information to the clients with the Serializable GameState class. The actions performed by the clients are communicated as text through the input and output streams of the socket to the server. Each action is tied to a specific string (FOLD, CALL, CHECK, RAISE) which are sent with PrintWriter and read with BufferedReader.
 
 2. **Multithreading**
    Each connected player is handled in its own thread through a HandleClient class. This allows the server to manage multiple clients at the same time while still listening for player actions independently.
@@ -114,9 +115,9 @@ This project uses the following three advanced course topics:
 
 **How The Advanced Topics Were Used**
 
-- **Sockets** were used to allow remote multiplayer play rather than a local-only game.
+- **Sockets** were used to allow multiple running instances of the application to play together instead of all being on one instance locally.
 - **Threads** were used for the server to communicate with multiple clients to enforce the expected flow and logic of texas holdem.
-- **Swing** was used to create a playable user interface. Players are able to see a graphical render of the cards and use buttons to perform actions in the game.
+- **Swing** was used to create a playable user interface. Players are able to see a graphical rendering of the cards and use buttons to perform actions in the game. Players also had panels indicating who's turn it was and a history of game activities.
 
 **Notes**
 
