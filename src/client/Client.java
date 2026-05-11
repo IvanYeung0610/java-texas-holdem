@@ -202,8 +202,15 @@ public class Client {
 		ArrayList<Player> players = state.getPlayers() == null ? new ArrayList<>() : state.getPlayers();
 		ArrayList<Card> communityCards = state.getCommunityCards() == null
 				? new ArrayList<>() : state.getCommunityCards();
+		Player self = findSelf(players);
 
 		logStateChanges(previousGameState, state);
+
+		if (shouldShowGameOverScreen(state, self)) {
+			showGameOverScreen(state);
+			previousGameState = state;
+			return;
+		}
 
 		String currentPlayerName = "N/A";
 		if (!players.isEmpty() && state.getCurrentPlayer() >= 0 && state.getCurrentPlayer() < players.size()) {
@@ -233,7 +240,6 @@ public class Client {
 		}
 
 		handPanel.removeAll();
-		Player self = findSelf(players);
 		if (self != null) {
 			for (Card card : self.getHand()) {
 				handPanel.add(createCardComponent(card));
@@ -314,6 +320,22 @@ public class Client {
 		return state.getPhase() == GamePhase.SHOWDOWN && playersWithChips <= 1;
 	}
 
+	private boolean shouldShowGameOverScreen(GameState state, Player self) {
+		if (gameOverScreenShown) {
+			return false;
+		}
+
+		if (self != null && self.getBalance() <= 0 && state.getPhase() == GamePhase.SHOWDOWN) {
+			return true;
+		}
+
+		if (self == null && previousGameState != null && findSelf(previousGameState.getPlayers()) != null) {
+			return true;
+		}
+
+		return isGameOverState(state);
+	}
+
 	private void showGameOverScreen(GameState state) {
 		if (gameOverScreenShown) {
 			return;
@@ -322,22 +344,37 @@ public class Client {
 		gameOverScreenShown = true;
 
 		Player self = findSelf(state.getPlayers());
+		if (self == null && previousGameState != null) {
+			self = findSelf(previousGameState.getPlayers());
+		}
+
+		int finalBalance = self == null ? 0 : self.getBalance();
 		int startingBalance = self == null
 				? 0
-				: handStartBalances.getOrDefault(self.getName(), self.getBalance());
-		int balanceChange = self == null ? 0 : self.getBalance() - startingBalance;
-		boolean wonGame = self != null && self.getBalance() > 0;
+				: handStartBalances.getOrDefault(self.getName(), finalBalance);
+		int balanceChange = finalBalance - startingBalance;
+		boolean tournamentOver = isGameOverState(state);
+		boolean wonGame = tournamentOver && self != null && finalBalance > 0;
+
+		String titleText;
+		if (wonGame) {
+			titleText = "You Won The Game";
+		} else if (self != null && finalBalance <= 0) {
+			titleText = "You Have Been Eliminated";
+		} else {
+			titleText = "You Lost The Game";
+		}
 
 		JPanel gameOverPanel = new JPanel(new BorderLayout(20, 20));
 		gameOverPanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
 
-		JLabel titleLabel = new JLabel(wonGame ? "You Won The Game" : "You Lost The Game", SwingConstants.CENTER);
+		JLabel titleLabel = new JLabel(titleText, SwingConstants.CENTER);
 		titleLabel.setFont(new Font("SansSerif", Font.BOLD, 32));
 
 		StringBuilder summary = new StringBuilder();
 		if (self != null) {
 			summary.append("Player: ").append(self.getName()).append('\n');
-			summary.append("Final balance: ").append(self.getBalance()).append('\n');
+			summary.append("Final balance: ").append(finalBalance).append('\n');
 
 			if (balanceChange > 0) {
 				summary.append("This hand: won ").append(balanceChange).append('\n');
@@ -346,6 +383,10 @@ public class Client {
 			} else {
 				summary.append("This hand: broke even").append('\n');
 			}
+		}
+
+		if (!tournamentOver && self != null && finalBalance <= 0) {
+			summary.append("You are out of chips, so the remaining players will continue without you.").append('\n');
 		}
 
 		ArrayList<String> winners = state.getWinner();
