@@ -104,7 +104,7 @@ The poker hand scoring logic is implemented in HandEvaluator.java. The evaluator
 This project uses the following three advanced course topics:
 
 1. **Networking with sockets**
-   The game uses Java sockets so players on different machines can connect to the same server. The server listens for incoming client connections. The sockets were used to send game information to the clients with the Serializable GameState class. The actions performed by the clients were communicated as text through the input and output streams of the socket to the server. Each action was tied to a specific string (FOLD, CALL, CHECK, RAISE) which were sent with PrintWriter and read with BufferedReader.
+   The game uses Java sockets so players on different machines can connect to the same server. The server listens for incoming client connections. The sockets were are used to send game information to the clients with the Serializable GameState class. The actions performed by the clients are communicated as text through the input and output streams of the socket to the server. Each action is tied to a specific string (FOLD, CALL, CHECK, RAISE) which are sent with PrintWriter and read with BufferedReader.
 
 2. **Multithreading**
    Each connected player is handled in its own thread through a HandleClient class. This allows the server to manage multiple clients at the same time while still listening for player actions independently.
@@ -115,9 +115,9 @@ This project uses the following three advanced course topics:
 
 **How The Advanced Topics Were Used**
 
-- **Sockets** were used to allow remote multiplayer play rather than a local-only game.
+- **Sockets** were used to allow multiple running instances of the application to play together instead of all being on one instance locally.
 - **Threads** were used for the server to communicate with multiple clients to enforce the expected flow and logic of texas holdem.
-- **Swing** was used to create a playable user interface. Players are able to see a graphical render of the cards and use buttons to perform actions in the game.
+- **Swing** was used to create a playable user interface. Players are able to see a graphical rendering of the cards and use buttons to perform actions in the game. Players also had panels indicating who's turn it was and a history of game activities.
 
 **Notes**
 
