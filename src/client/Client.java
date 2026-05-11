@@ -47,8 +47,6 @@ public class Client {
 	private boolean gameOverScreenShown;
 
 	private JFrame frame;
-	private JLabel statusLabel;
-	private JLabel potLabel;
 	private JPanel playersPanel;
 	private JTextArea turnInfoArea;
 	private JTextArea actionLogArea;
@@ -81,12 +79,6 @@ public class Client {
 		frame.setSize(1200, 720);
 		frame.setLocationRelativeTo(null);
 		frame.setLayout(new BorderLayout(10, 10));
-
-		JPanel headerPanel = new JPanel(new GridLayout(2, 1));
-		statusLabel = new JLabel("Waiting for game to start...", SwingConstants.CENTER);
-		potLabel = new JLabel("Pot: 0", SwingConstants.CENTER);
-		headerPanel.add(statusLabel);
-		headerPanel.add(potLabel);
 
 		playersPanel = new JPanel();
 		playersPanel.setLayout(new BoxLayout(playersPanel, BoxLayout.Y_AXIS));
@@ -169,7 +161,6 @@ public class Client {
 		leftPanel.add(lowerLeftPanel, BorderLayout.SOUTH);
 		leftPanel.setPreferredSize(new Dimension(320, 0));
 
-		frame.add(headerPanel, BorderLayout.NORTH);
 		frame.add(leftPanel, BorderLayout.WEST);
 		frame.add(centerPanel, BorderLayout.CENTER);
 		frame.add(actionPanel, BorderLayout.SOUTH);
@@ -189,7 +180,7 @@ public class Client {
 						return;
 					}
 					setActionButtonsEnabled(false);
-					statusLabel.setText("Disconnected from server.");
+					turnInfoArea.setText("Disconnected from server.");
 				});
 			}
 		});
@@ -216,9 +207,6 @@ public class Client {
 		if (!players.isEmpty() && state.getCurrentPlayer() >= 0 && state.getCurrentPlayer() < players.size()) {
 			currentPlayerName = players.get(state.getCurrentPlayer()).getName();
 		}
-
-		statusLabel.setText("Phase: " + state.getPhase() + " | Current Player: " + currentPlayerName);
-		potLabel.setText("Pot: " + state.getPotTotal());
 		updateTurnInfo(state, currentPlayerName);
 
 		playersPanel.removeAll();
@@ -268,11 +256,6 @@ public class Client {
 		}
 
 		if (state.getPhase() == GamePhase.SHOWDOWN) {
-			ArrayList<String> winners = state.getWinner();
-			String winnerText = (winners == null || winners.isEmpty())
-					? "No winner"
-					: String.join(", ", winners);
-			statusLabel.setText("Showdown | Winner: " + winnerText);
 			setActionButtonsEnabled(false);
 
 			if (isGameOverState(state)) {
