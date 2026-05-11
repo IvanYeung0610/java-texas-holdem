@@ -188,6 +188,7 @@ public class Server {
 	}
 	
 	public static void main(String[] args) {
+		// Default server settings: Port 3000, 3 players, 1000 starting balance
 		Server server = new Server(3000, 3, 1000);
 		server.start();
 	}

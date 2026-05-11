@@ -539,7 +539,6 @@ public class Game {
 		}
 	}
 	
-	// Returns the current game phase
 	public GamePhase getPhase() {
 		return phase;
 	}
