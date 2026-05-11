@@ -28,7 +28,19 @@ If using Eclipse:
    - player name
    - server host
    - port `3000` unless you changed it in `Server.java`
-6. Start the game after both players have connected.
+6. Start the game after all players have connected.
+
+If running on terminal:
+
+1. Go into the project directory `cd java-texas-holdem`
+2. Compile the java files `javac src/*.java`
+3. Run the server `java src/server/Server`
+4. For each client open a terminal and run `java src/client/Client`
+5. In each client window, enter:
+   - player name
+   - server host
+   - port `3000` unless you changed it in `Server.java`
+6. Start the game after all players have connected.
 
 **Default Settings**
 
@@ -80,7 +92,7 @@ The poker hand scoring logic is implemented in HandEvaluator.java. The evaluator
    The code creates one integer score where:
    - the highest part stores the hand category
    - the remaining parts store tie-breaker ranks such as pair rank, trip rank, or kicker cards
-   - this number is generated bit shifting the score of each section according to it's importance (the category shifted to the left the most) and oring the different numbers to produce a singular score
+   - this number is generated bit shifting the score of each section according to it's importance (the category shifted to the left the most) and ORing the different numbers to produce a singular score
 
 5. Keep the highest score out of all 21 combinations.
    The best numeric score found becomes that player's final hand score. The game then compares player scores to determine the winner at showdown.
@@ -90,10 +102,10 @@ The poker hand scoring logic is implemented in HandEvaluator.java. The evaluator
 This project uses the following three advanced course topics:
 
 1. **Networking with sockets**
-   The game uses Java sockets so players on different machines can connect to the same server. The server listens for incoming client connections in `server.Server`, and each client connects through `client.Client`.
+   The game uses Java sockets so players on different machines can connect to the same server. The server listens for incoming client connections. The sockets were used to send game information to the clients with the Serializable GameState class. The actions performed by the clients were communicated as text through the input and output streams of the socket to the server. Each action was tied to a specific string (FOLD, CALL, CHECK, RAISE) which were sent with PrintWriter and read with BufferedReader.
 
 2. **Multithreading**
-   Each connected player is handled in its own thread through `HandleClient implements Runnable`. This allows the server to manage multiple clients at the same time while still listening for player actions independently.
+   Each connected player is handled in its own thread through a HandleClient class. This allows the server to manage multiple clients at the same time while still listening for player actions independently.
 
 3. **Graphical user interface with Swing**
    The client is implemented as a desktop GUI using Swing. It includes buttons for actions, text fields for raises, custom card rendering, scrollable status panels, and dynamic turn/action updates.
@@ -102,7 +114,7 @@ This project uses the following three advanced course topics:
 **How The Advanced Topics Were Used**
 
 - **Sockets** were used to allow remote multiplayer play rather than a local-only game.
-- **Threads** were used so one client waiting for input would not freeze the rest of the server. This allowed the server to communicate with multiple clients to enforce the expected flow of texas holdem.
+- **Threads** were used for the server to communicate with multiple clients to enforce the expected flow and logic of texas holdem.
 - **Swing** was used to create a playable user interface. Players are able to see a graphical render of the cards and use buttons to perform actions in the game.
 
 **Notes**
