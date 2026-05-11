@@ -32,7 +32,7 @@ If using Eclipse:
 
 **Default Settings**
 
-The default values are currently hardcoded in [Server.java](/home/iyeung/Documents/Projects/java-texas-holdem/src/server/Server.java):
+The default values are currently hardcoded in Server.java:
 
 - Port: `3000`
 - Number of players: `3`
@@ -49,6 +49,41 @@ These can be changed in the `main` method of `server.Server`.
 - Pot tracking
 - Hand comparison and winner selection
 - Client display for community cards, player hand, turn tracking, and hand history
+
+**Poker Hand Scoring Algorithm**
+
+The poker hand scoring logic is implemented in HandEvaluator.java. The evaluator uses the following algorithm to find the best hand that a player has from their two hole cards and the five community cards by producing a numeric score for the hand:
+
+1. Generate all possible 5-card combinations from the 7 available cards.
+   There are 21 total combinations, and the evaluator checks every one of them.
+
+2. Score each 5-card hand individually.
+   For each 5-card combination, the algorithm:
+   - counts the frequency of each rank
+   - checks whether all suits match to detect a flush
+   - checks whether the ranks form a straight, including the special low-Ace straight `A-2-3-4-5`
+   - detects grouped patterns such as pairs, three of a kind, and four of a kind
+
+3. Assign a hand category.
+   The evaluator checks categories from strongest to weakest:
+   - straight flush
+   - four of a kind
+   - full house
+   - flush
+   - straight
+   - three of a kind
+   - two pair
+   - one pair
+   - high card
+
+4. Build a numeric score with tie-breakers included.
+   The code creates one integer score where:
+   - the highest part stores the hand category
+   - the remaining parts store tie-breaker ranks such as pair rank, trip rank, or kicker cards
+   - this number is generated bit shifting the score of each section according to it's importance (the category shifted to the left the most) and oring the different numbers to produce a singular score
+
+5. Keep the highest score out of all 21 combinations.
+   The best numeric score found becomes that player's final hand score. The game then compares player scores to determine the winner at showdown.
 
 **Advanced Topics Used**
 
