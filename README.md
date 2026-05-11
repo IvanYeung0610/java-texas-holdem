@@ -1,6 +1,8 @@
 # Java Texas Hold'em
 
-This project is a networked multiplayer Texas Hold'em game written in Java. It uses a client-server architecture where one machine runs the game server and multiple clients connect to play through a Swing-based graphical interface.
+Texas hold’em is a popular variant of poker. The basic premise of the game consists of each player getting two cards at the beginning of a round and the dealer spreading out five cards that can be used by all players. The object of this game is to have the best possible combination of five cards using any combination of the seven cards available (the two cards received at the beginning along with the five cards spread by the dealer). The dealer will spread these five cards out over the course of three phases. Before and in between these phases each player will have a turn to perform an action (fold, call, check, or raise) to leave the game, stay in the game, or raise the amount being bet for that round. Once all five cards have been shown, the person with the best hand gets all the money that was bet. If everyone folded except a single person, that remaining person gets all the money.
+
+This project is a multiplayer Texas Hold'em game written in Java. It uses a client-server architecture where one machine runs the game server and multiple clients connect to play through a Swing-based graphical interface.
 
 **Requirements**
 
