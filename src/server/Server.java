@@ -1,5 +1,12 @@
 package server;
 
+/*
+ * Ivan Yeung
+ * Java Texas Holdem
+ * NYU Tandon
+ * 05/11/2026
+ */
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
