@@ -17,6 +17,8 @@ import shared.GameState;
 import shared.Player;
 
 public class Server {
+	private static final int PHASE_TRANSITION_DELAY_MS = 1000;
+
 	private ServerSocket serverSocket;
 	private ArrayList<HandleClient> clients;
 	private Game game;
@@ -127,9 +129,21 @@ public class Server {
 	}
 
 	private void advanceGame() {
-		if (game == null || game.getPhase() != GamePhase.SHOWDOWN) {
+		if (game == null) {
 			return;
 		}
+
+		while (game.shouldAutoAdvancePhase()) {
+			sleepForTransition();
+			game.autoAdvancePhase();
+			broadcastGameState();
+		}
+
+		if (game.getPhase() != GamePhase.SHOWDOWN) {
+			return;
+		}
+
+		sleepForTransition();
 
 		if (clients.size() < 2 || game.isGameOver()) {
 			shutdown();
@@ -137,6 +151,14 @@ public class Server {
 		}
 
 		startGame();
+	}
+
+	private void sleepForTransition() {
+		try {
+			Thread.sleep(PHASE_TRANSITION_DELAY_MS);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	private void shutdown() {

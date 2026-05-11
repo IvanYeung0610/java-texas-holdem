@@ -326,8 +326,16 @@ public class Game {
 		default:
 			return;
 		}
+	}
 
-		if (!hasPlayersWhoCanAct()) {
+	public boolean shouldAutoAdvancePhase() {
+		return phase != GamePhase.WAITING
+				&& phase != GamePhase.SHOWDOWN
+				&& !hasPlayersWhoCanAct();
+	}
+
+	public void autoAdvancePhase() {
+		if (shouldAutoAdvancePhase()) {
 			advancePhase();
 		}
 	}
