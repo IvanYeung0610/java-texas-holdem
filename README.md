@@ -107,7 +107,7 @@ This project uses the following three advanced course topics:
    The game uses Java sockets so players on different machines can connect to the same server. The server listens for incoming client connections. The sockets were are used to send game information to the clients with the Serializable GameState class. The actions performed by the clients are communicated as text through the input and output streams of the socket to the server. Each action is tied to a specific string (FOLD, CALL, CHECK, RAISE) which are sent with PrintWriter and read with BufferedReader.
 
 2. **Multithreading**
-   Each connected player is handled in its own thread through a HandleClient class. This allows the server to manage multiple clients at the same time while still listening for player actions independently.
+   Each connected player is handled in its own thread through a HandleClient class. This allows the server to manage multiple clients at the same time while still listening for player actions independently. Additionally clients had a main thread rendering the UI and another thread that listens for GameState objects from the server to get updates about the game.
 
 3. **Graphical user interface with Swing**
    The client is implemented as a desktop GUI using Swing. It includes buttons for actions, text fields for raises, custom card rendering, scrollable status panels, and dynamic turn/action updates.
@@ -116,7 +116,7 @@ This project uses the following three advanced course topics:
 **How The Advanced Topics Were Used**
 
 - **Sockets** were used to allow multiple running instances of the application to play together instead of all being on one instance locally.
-- **Threads** were used for the server to communicate with multiple clients to enforce the expected flow and logic of texas holdem.
+- **Threads** were used for the server to communicate with multiple clients to enforce the expected flow and logic of texas holdem. The client also uses threads to listen to game state updates without freezing the program.
 - **Swing** was used to create a playable user interface. Players are able to see a graphical rendering of the cards and use buttons to perform actions in the game. Players also had panels indicating who's turn it was and a history of game activities.
 
 **Notes**
