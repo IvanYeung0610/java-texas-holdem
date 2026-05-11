@@ -58,7 +58,6 @@ These can be changed in the `main` method of `server.Server`.
 **Gameplay Features**
 
 - Multiplayer Texas Hold'em
-- Dealer rotation with blinds
 - Pre-flop, flop, turn, river, and showdown phases
 - Folding, checking, calling, and raising
 - Pot tracking
