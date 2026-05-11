@@ -35,14 +35,14 @@ If using Eclipse:
 The default values are currently hardcoded in [Server.java](/home/iyeung/Documents/Projects/java-texas-holdem/src/server/Server.java):
 
 - Port: `3000`
-- Number of players: `2`
+- Number of players: `3`
 - Starting balance: `1000`
 
 These can be changed in the `main` method of `server.Server`.
 
 **Gameplay Features**
 
-- Two-player Texas Hold'em
+- Multiplayer Texas Hold'em
 - Dealer rotation with blinds
 - Pre-flop, flop, turn, river, and showdown phases
 - Folding, checking, calling, and raising
@@ -52,7 +52,7 @@ These can be changed in the `main` method of `server.Server`.
 
 **Advanced Topics Used**
 
-This project uses more than three advanced course topics:
+This project uses the following three advanced course topics:
 
 1. **Networking with sockets**
    The game uses Java sockets so players on different machines can connect to the same server. The server listens for incoming client connections in `server.Server`, and each client connects through `client.Client`.
@@ -67,12 +67,15 @@ This project uses more than three advanced course topics:
 **How The Advanced Topics Were Used**
 
 - **Sockets** were used to allow remote multiplayer play rather than a local-only game.
-- **Threads** were used so one client waiting for input would not freeze the rest of the server.
-- **Serialization** was used to keep client updates simple and consistent by sending a full `GameState`.
-- **Swing** was used to create a playable user interface instead of a console-only program.
+- **Threads** were used so one client waiting for input would not freeze the rest of the server. This allowed the server to communicate with multiple clients to enforce the expected flow of texas holdem.
+- **Swing** was used to create a playable user interface. Players are able to see a graphical render of the cards and use buttons to perform actions in the game.
 
 **Notes**
 
-- The current server setup expects exactly two players before starting.
-- If you move the project to another machine, make sure hidden files like `.project` and `.classpath` are copied too if you plan to use Eclipse.
-- If clients connect from another machine, use the server machine's IP address instead of `localhost`.
+- The current server setup expects exactly players before starting.
+- The port that the server runs on, the number of players in the game, and the starting balance for each player can be changed
+by changing the line in main() of Server.java that initializes the Server object:
+- The small and big blinds are hard coded to 10 and 20 respectively.
+```
+	Server server = new Server(3000, 3, 1000);
+```
