@@ -49,6 +49,7 @@ public class Game {
 		this.playersActedThisRound = new ArrayList<>();
 	}
 
+	// Starts a new hand if there are enough players remaining
 	public void startGame() {
 		if (players == null || players.size() < 2) {
 			phase = GamePhase.WAITING;
@@ -74,6 +75,7 @@ public class Game {
 		}
 	}
 
+	// Handles a action from the current player
 	public void handleAction(Player p, String[] action) {
 		if (p == null || action == null || action.length == 0 || phase == GamePhase.WAITING
 				|| phase == GamePhase.SHOWDOWN) {
@@ -104,6 +106,7 @@ public class Game {
 		checkRoundState();
 	}
 
+	// Folds a player out of the hand if they disconnect
 	public void forceFold(Player p) {
 		if (p == null || phase == GamePhase.WAITING || phase == GamePhase.SHOWDOWN) {
 			return;
@@ -131,6 +134,7 @@ public class Game {
 		checkRoundState();
 	}
 
+	// Builds a copy of the game state to send to a specific player
 	public GameState buildGameState(Player recipient) {
 		ArrayList<Card> communityCopy = new ArrayList<>(communityCards);
 		ArrayList<Player> playersCopy = new ArrayList<>();
@@ -145,6 +149,7 @@ public class Game {
 		return new GameState(communityCopy, playersCopy, potTotal, currentPlayerIndex, winnersCopy, phase);
 	}
 
+	// Returns whether the overall game is over
 	public boolean isGameOver() {
 		int playersWithChips = 0;
 
@@ -157,6 +162,7 @@ public class Game {
 		return playersWithChips <= 1;
 	}
 
+	// Posts the small blind and big blind at the start of a hand
 	private void postBlinds() {
 		Player smallBlindPlayer = players.get(smallBlindIndex);
 		int bigBlindIndex = (smallBlindIndex + 1) % players.size();
@@ -181,6 +187,7 @@ public class Game {
 		lastAggressorIndex = bigBlindIndex;
 	}
 
+	// Handles a fold action
 	private void handleFold(Player p) {
 		p.fold();
 		markPlayerActed(players.indexOf(p));
@@ -195,6 +202,7 @@ public class Game {
 		advanceTurn();
 	}
 
+	// Handles a call action by placing the amount owed into the pot
 	private void handleCall(Player p) {
 		int amountOwed = Math.max(0, currentBet - p.getCurrentBet());
 		int amountToPlace = Math.min(amountOwed, p.getBalance());
@@ -210,6 +218,7 @@ public class Game {
 		advanceTurn();
 	}
 
+	// Handles a check action if the player has matched the current bet
 	private void handleCheck(Player p) {
 		if (p.getCurrentBet() != currentBet) {
 			return;
@@ -220,6 +229,7 @@ public class Game {
 		advanceTurn();
 	}
 
+	// Handles a raise action and resets the acted flags for the new bet
 	private void handleRaise(Player p, int raiseAmount) {
 		if (raiseAmount <= currentBet) {
 			return;
@@ -247,6 +257,7 @@ public class Game {
 		advanceTurn();
 	}
 
+	// Advances to the next player that can act
 	private void advanceTurn() {
 		if (phase == GamePhase.SHOWDOWN || players.isEmpty()) {
 			return;
@@ -259,6 +270,7 @@ public class Game {
 		currentPlayerIndex = findNextIndex((currentPlayerIndex + 1) % players.size(), false);
 	}
 
+	// Checks if the current betting round is over
 	private void checkRoundState() {
 		if (phase == GamePhase.WAITING || phase == GamePhase.SHOWDOWN) {
 			return;
@@ -269,6 +281,7 @@ public class Game {
 		}
 	}
 
+	// Returns whether all remaining players have completed the betting round
 	private boolean isBettingRoundOver() {
 		ArrayList<Player> activePlayers = getActivePlayers();
 		if (activePlayers.size() <= 1) {
@@ -295,6 +308,7 @@ public class Game {
 		return true;
 	}
 
+	// Advances the game to the next phase
 	private void advancePhase() {
 		resetCurrentBets();
 		currentBet = 0;
@@ -328,18 +342,21 @@ public class Game {
 		}
 	}
 
+	// Returns whether the game should reveal the next phase automatically
 	public boolean shouldAutoAdvancePhase() {
 		return phase != GamePhase.WAITING
 				&& phase != GamePhase.SHOWDOWN
 				&& !hasPlayersWhoCanAct();
 	}
 
+	// Advances the phase if there are no players left who can act
 	public void autoAdvancePhase() {
 		if (shouldAutoAdvancePhase()) {
 			advancePhase();
 		}
 	}
 
+	// Deals two hole cards to each player
 	private void dealHoleCards() {
 		for (int i = 0; i < 2; i++) {
 			for (Player player : players) {
@@ -348,20 +365,24 @@ public class Game {
 		}
 	}
 
+	// Deals the flop cards
 	private void dealFlop() {
 		for (int i = 0; i < 3; i++) {
 			communityCards.add(deck.deal());
 		}
 	}
 
+	// Deals the turn card
 	private void dealTurn() {
 		communityCards.add(deck.deal());
 	}
 
+	// Deals the river card
 	private void dealRiver() {
 		communityCards.add(deck.deal());
 	}
 
+	// Determines which active player has the best hand
 	private void determineWinner() {
 		ArrayList<Player> activePlayers = getActivePlayers();
 		ArrayList<Player> winners = new ArrayList<>();
@@ -384,6 +405,7 @@ public class Game {
 		awardPot(winners);
 	}
 
+	// Awards the pot to the winning player or players
 	private void awardPot(ArrayList<Player> winners) {
 		pot.award(winners);
 		potTotal = 0;
@@ -393,6 +415,7 @@ public class Game {
 		}
 	}
 
+	// Returns a list of players that have not folded
 	private ArrayList<Player> getActivePlayers() {
 		ArrayList<Player> activePlayers = new ArrayList<>();
 
@@ -405,6 +428,7 @@ public class Game {
 		return activePlayers;
 	}
 
+	// Resets the state for the next hand
 	private void resetRound() {
 		removeEliminatedPlayers();
 		if (players.isEmpty()) {
@@ -426,6 +450,7 @@ public class Game {
 		smallBlindIndex = (smallBlindIndex + 1) % players.size();
 	}
 
+	// Returns whether the given player is the one whose turn it is
 	private boolean isCurrentPlayer(Player player) {
 		if (players.isEmpty() || currentPlayerIndex < 0 || currentPlayerIndex >= players.size()) {
 			return false;
@@ -433,6 +458,7 @@ public class Game {
 		return players.get(currentPlayerIndex) == player;
 	}
 
+	// Returns whether there are any players left that can still act
 	private boolean hasPlayersWhoCanAct() {
 		for (Player player : players) {
 			if (!player.isFolded() && !player.isAllIn()) {
@@ -442,6 +468,7 @@ public class Game {
 		return false;
 	}
 
+	// Finds the next player index that is still active in the hand
 	private int findNextIndex(int startIndex, boolean includeAllIn) {
 		if (players.isEmpty()) {
 			return 0;
@@ -465,6 +492,7 @@ public class Game {
 		return startIndex % players.size();
 	}
 
+	// Finds which player should act first in a new betting phase
 	private int findPhaseStartIndex() {
 		if (players.isEmpty()) {
 			return 0;
@@ -479,12 +507,14 @@ public class Game {
 		return findNextIndex((smallBlindIndex + 1) % players.size(), true);
 	}
 
+	// Resets each player's current bet to zero
 	private void resetCurrentBets() {
 		for (Player player : players) {
 			player.resetCurrentBet();
 		}
 	}
 
+	// Removes players that no longer have chips remaining
 	private void removeEliminatedPlayers() {
 		players.removeIf(player -> player.getBalance() <= 0);
 		if (players.isEmpty()) {
@@ -494,6 +524,7 @@ public class Game {
 		}
 	}
 
+	// Resets which players have acted in the current betting round
 	private void resetPlayersActedThisRound() {
 		playersActedThisRound.clear();
 		for (int i = 0; i < players.size(); i++) {
@@ -501,12 +532,14 @@ public class Game {
 		}
 	}
 
+	// Marks a player as having acted in the current betting round
 	private void markPlayerActed(int playerIndex) {
 		if (playerIndex >= 0 && playerIndex < playersActedThisRound.size()) {
 			playersActedThisRound.set(playerIndex, true);
 		}
 	}
 	
+	// Returns the current game phase
 	public GamePhase getPhase() {
 		return phase;
 	}

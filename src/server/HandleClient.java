@@ -46,6 +46,7 @@ public class HandleClient implements Runnable{
 		}
 	}
 	
+	// Sends a game state object to the client
 	public void sendGameState(GameState state) {
 		try {
 			out.writeObject(state);
@@ -56,12 +57,14 @@ public class HandleClient implements Runnable{
 		}
 	}
 
+	// Sends a waiting state before the full game starts
 	public void sendWaitingState() {
 		sendGameState(new GameState(new ArrayList<>(), new ArrayList<>(), 0, 0, new ArrayList<>(),
 				GamePhase.WAITING));
 	}
 
 	@Override
+	// Continuously listens for actions from this client
 	public void run() {
 		try {
 			while (running) {
@@ -82,10 +85,12 @@ public class HandleClient implements Runnable{
 		}
 	}
 	
+	// Returns the Player object associated with this client
 	public Player getPlayer() {
 		return player;
 	}
 	
+	// Disconnects the client and closes all resources
 	public void disconnect() {
 		running = false;
 		
@@ -104,6 +109,7 @@ public class HandleClient implements Runnable{
 		}
 	}
 
+	// Splits a line of text from the client into a action command
 	private String[] parseAction(String line) {
 		String trimmedLine = line.trim();
 		if (trimmedLine.isEmpty()) {

@@ -80,6 +80,7 @@ public class Client {
 		listenForUpdates();
 	}
 
+	// Builds the main game window for the client
 	private void buildUI() {
 		frame = new JFrame("Texas Hold'em - " + playerName);
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -174,6 +175,7 @@ public class Client {
 		frame.setVisible(true);
 	}
 
+	// Starts a background thread to receive game state updates from the server
 	private void listenForUpdates() {
 		Thread listenerThread = new Thread(() -> {
 			try {
@@ -196,6 +198,7 @@ public class Client {
 		listenerThread.start();
 	}
 
+	// Updates the user interface using the newest game state
 	private void updateUI(GameState state) {
 		ArrayList<Player> players = state.getPlayers() == null ? new ArrayList<>() : state.getPlayers();
 		ArrayList<Card> communityCards = state.getCommunityCards() == null
@@ -275,12 +278,14 @@ public class Client {
 		previousGameState = state;
 	}
 
+	// Sends a action string to the server
 	private void sendAction(String action) {
 		out.println(action);
 		out.flush();
 		setActionButtonsEnabled(false);
 	}
 
+	// Finds this client's player object inside the player list
 	private Player findSelf(ArrayList<Player> players) {
 		for (Player player : players) {
 			if (player.getName().equals(playerName)) {
@@ -290,6 +295,7 @@ public class Client {
 		return null;
 	}
 
+	// Returns the highest current bet on the table
 	private int getHighestCurrentBet(ArrayList<Player> players) {
 		int highestBet = 0;
 		for (Player player : players) {
@@ -300,6 +306,7 @@ public class Client {
 		return highestBet;
 	}
 
+	// Returns whether the entire game is over
 	private boolean isGameOverState(GameState state) {
 		int playersWithChips = 0;
 		for (Player player : state.getPlayers()) {
@@ -310,6 +317,7 @@ public class Client {
 		return state.getPhase() == GamePhase.SHOWDOWN && playersWithChips <= 1;
 	}
 
+	// Returns whether this client should be moved to the game over screen
 	private boolean shouldShowGameOverScreen(GameState state, Player self) {
 		if (gameOverScreenShown) {
 			return false;
@@ -326,6 +334,7 @@ public class Client {
 		return isGameOverState(state);
 	}
 
+	// Shows the final result screen for this client
 	private void showGameOverScreen(GameState state) {
 		if (gameOverScreenShown) {
 			return;
@@ -410,6 +419,7 @@ public class Client {
 		frame.repaint();
 	}
 
+	// Updates the text shown in the turn tracker panel
 	private void updateTurnInfo(GameState state, String currentPlayerName) {
 		StringBuilder info = new StringBuilder();
 		info.append("Phase: ").append(state.getPhase()).append('\n');
@@ -431,6 +441,7 @@ public class Client {
 		turnInfoArea.setCaretPosition(0);
 	}
 
+	// Logs visible game events by comparing the previous state and current state
 	private void logStateChanges(GameState previousState, GameState currentState) {
 		if (isStartOfNewHand(previousState, currentState)) {
 			recordHandStartBalances(currentState.getPlayers());
@@ -443,6 +454,7 @@ public class Client {
 		logShowdownResults(previousState, currentState);
 	}
 
+	// Returns whether a new hand has just started
 	private boolean isStartOfNewHand(GameState previousState, GameState currentState) {
 		if (currentState.getPhase() != GamePhase.PRE_FLOP || !currentState.getCommunityCards().isEmpty()) {
 			return false;
@@ -457,6 +469,7 @@ public class Client {
 				|| !previousState.getCommunityCards().isEmpty();
 	}
 
+	// Records each player's balance at the start of a hand
 	private void recordHandStartBalances(ArrayList<Player> players) {
 		handStartBalances.clear();
 		for (Player player : players) {
@@ -464,6 +477,7 @@ public class Client {
 		}
 	}
 
+	// Logs when the flop, turn, or river is revealed
 	private void logPhaseTransition(GameState previousState, GameState currentState) {
 		if (previousState == null || previousState.getPhase() == currentState.getPhase()) {
 			return;
@@ -492,6 +506,7 @@ public class Client {
 		}
 	}
 
+	// Logs a player action inferred from the state transition
 	private void logPlayerAction(GameState previousState, GameState currentState) {
 		if (previousState == null) {
 			return;
@@ -515,6 +530,7 @@ public class Client {
 		}
 	}
 
+	// Infers which action a player took between two game states
 	private String inferPlayerAction(Player previousPlayer, Player currentPlayer, int previousTableBet,
 			GameState previousState, GameState currentState, int playerIndex) {
 		String playerName = currentPlayer.getName();
@@ -551,6 +567,7 @@ public class Client {
 		return null;
 	}
 
+	// Logs the winners and chip changes at showdown
 	private void logShowdownResults(GameState previousState, GameState currentState) {
 		if (currentState.getPhase() != GamePhase.SHOWDOWN) {
 			return;
@@ -579,6 +596,7 @@ public class Client {
 		}
 	}
 
+	// Formats a list of cards into a single text string
 	private String formatCards(ArrayList<Card> cards) {
 		ArrayList<String> formattedCards = new ArrayList<>();
 		for (Card card : cards) {
@@ -587,19 +605,23 @@ public class Client {
 		return String.join(" ", formattedCards);
 	}
 
+	// Formats a single card into rank and suit text
 	private String formatCard(Card card) {
 		return getRankText(card) + getSuitSymbol(card);
 	}
 
+	// Appends a message to the hand history area
 	private void appendLog(String message) {
 		actionLogArea.append(message + "\n");
 		actionLogArea.setCaretPosition(actionLogArea.getDocument().getLength());
 	}
 
+	// Creates the UI component used to draw a card
 	private JComponent createCardComponent(Card card) {
 		return new CardView(card);
 	}
 
+	// Returns the display text for a card rank
 	private String getRankText(Card card) {
 		int rank = card.getRank();
 		switch (rank) {
@@ -616,6 +638,7 @@ public class Client {
 		}
 	}
 
+	// Returns the display symbol for a card suit
 	private String getSuitSymbol(Card card) {
 		switch (card.getSuit()) {
 		case HEART:
@@ -631,6 +654,7 @@ public class Client {
 		}
 	}
 
+	// Returns the color that should be used to draw a card suit
 	private Color getSuitColor(Card card) {
 		switch (card.getSuit()) {
 		case HEART:
@@ -643,6 +667,7 @@ public class Client {
 		}
 	}
 
+	// Enables or disables all action controls
 	private void setActionButtonsEnabled(boolean enabled) {
 		foldButton.setEnabled(enabled);
 		callButton.setEnabled(enabled);
@@ -656,6 +681,7 @@ public class Client {
 		private static final int CARD_HEIGHT = 130;
 		private final Card card;
 
+		// Creates a panel that draws a single playing card
 		private CardView(Card card) {
 			this.card = card;
 			setOpaque(false);
@@ -666,6 +692,7 @@ public class Client {
 		}
 
 		@Override
+		// Draws the card face inside the panel
 		protected void paintComponent(Graphics g) {
 			super.paintComponent(g);
 

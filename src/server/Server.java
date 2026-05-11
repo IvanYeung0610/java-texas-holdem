@@ -33,6 +33,7 @@ public class Server {
 		clients = new ArrayList<>();
 	}
 	
+	// Starts the server and waits for enough players to connect
 	public void start() {
 		try {
 			serverSocket = new ServerSocket(port);
@@ -45,6 +46,7 @@ public class Server {
 		startGame();
 	}
 	
+	// Handles a action sent from a client
 	public synchronized void handleAction(Player p, String[] action) {
 		if (game == null) {
 			return;
@@ -55,6 +57,7 @@ public class Server {
 		advanceGame();
 	}
 	
+	// Removes a client from the server and folds them out if needed
 	public synchronized void removeClient(HandleClient client) {
 		if (!clients.contains(client)) {
 			return;
@@ -85,6 +88,7 @@ public class Server {
 		}
 	}
 	
+	// Waits for the expected number of players to connect
 	private void waitForPlayers() {
 		while (clients.size() != maxPlayers) {
 			try {
@@ -102,6 +106,7 @@ public class Server {
 		}
 	}
 	
+	// Starts a new hand with the currently connected players
 	private void startGame() {
 		if (clients.size() < 2) {
 			return;
@@ -117,6 +122,7 @@ public class Server {
 		broadcastGameState();
 	}
 	
+	// Sends the current game state to every connected client
 	public void broadcastGameState() {
 		if (game == null) {
 			return;
@@ -128,6 +134,7 @@ public class Server {
 		}
 	}
 
+	// Advances the game after an action or after a showdown
 	private void advanceGame() {
 		if (game == null) {
 			return;
@@ -153,6 +160,7 @@ public class Server {
 		startGame();
 	}
 
+	// Sleeps briefly so clients can see automatic transitions
 	private void sleepForTransition() {
 		try {
 			Thread.sleep(PHASE_TRANSITION_DELAY_MS);
@@ -161,6 +169,7 @@ public class Server {
 		}
 	}
 
+	// Shuts down the server and disconnects all clients
 	private void shutdown() {
 		ArrayList<HandleClient> clientsToClose = new ArrayList<>(clients);
 		clients.clear();
